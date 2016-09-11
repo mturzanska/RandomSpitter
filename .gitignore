@@ -1,0 +1,9 @@
+# compiled source
+*.pyc
+
+# vim swap files
+*.swp
+
+# virtualenv dir
+venv/
+
