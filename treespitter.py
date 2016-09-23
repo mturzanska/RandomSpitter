@@ -53,15 +53,17 @@ class TreeSpitter(object):
         return branches
 
     def grow_tree(self):
-        while self.tree.depth < len(self.attrs):
-            for node in self.tree.nodes:
-                if node.is_leaf:
-                    node.is_leaf = False
-                    attr = self.choose_attribute(node.data)
-                    branches = self.fork(node.data, attr)
-                    for attr_value, data in branches.iteritems():
-                        child_node = Node(parent_node=node, data=data,
-                                          attr=attr, attr_value=attr_value)
-                        self.Tree.nodes.append(child_node)
-            self.Tree.depth += 1
-        return self.Tree
+        for leaf in self.tree.leaves:
+            if leaf.level <= len(self.init_attrs):
+                self.tree.nodes.append(leaf)
+                self.tree.leaves.remove(leaf)
+                level = leaf.level + 1
+                attr = self.choose_attribute(leaf.data)
+                branches = self.fork(leaf.data, attr)
+                for attr_value, data in branches.iteritems():
+                    child_node = Node(parent_node=leaf, data=data, attr=attr,
+                                      attr_value=attr_value, level=level)
+                    self.tree.leaves.append(child_node)
+            else:
+                continue
+        return self.tree
