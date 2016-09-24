@@ -45,25 +45,31 @@ class TreeSpitter(object):
 
     def fork(self, data, attr):
         branches = {}
-        attr_values = data[attr].unique()
+        try:
+            attr_values = data[attr].unique()
+        except KeyError:
+            return
         for value in attr_values:
             branch = data.loc[data[attr] == value]
             branch = branch.drop(attr, axis=1)
             branches[value] = branch
         return branches
 
-    def grow_tree(self):
-        for leaf in self.tree.leaves:
-            if leaf.level <= len(self.init_attrs):
-                self.tree.nodes.append(leaf)
-                self.tree.leaves.remove(leaf)
-                level = leaf.level + 1
-                attr = self.choose_attribute(leaf.data)
-                branches = self.fork(leaf.data, attr)
-                for attr_value, data in branches.iteritems():
-                    child_node = Node(parent_node=leaf, data=data, attr=attr,
-                                      attr_value=attr_value, level=level)
-                    self.tree.leaves.append(child_node)
-            else:
-                continue
+    def unstub_a_stub(self):
+        stub = self.tree.stubs.pop()
+        attr = self.choose_attribute(stub.data)
+        branches = self.fork(stub.data, attr)
+        if not branches:
+            self.tree.leaves.append(stub)
+            return
+        for attr_value, data in branches.iteritems():
+            child = Node(parent=stub, data=data, attr=attr,
+                         attr_value=attr_value)
+            stub.kids.append(child)
+            self.tree.stubs.append(child)
+            self.tree.nodes.append(stub)
+
+    def spit_tree(self):
+        while self.tree.stubs:
+            self.unstub_a_stub()
         return self.tree
