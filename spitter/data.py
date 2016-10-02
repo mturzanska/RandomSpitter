@@ -1,4 +1,5 @@
 import logging
+import random
 import sys
 
 from pandas import DataFrame
@@ -6,7 +7,12 @@ from pandas import DataFrame
 
 class Data(object):
 
-    def __init__(self, file_path, class_col):
+    SAMPLE_FRAC = 0.67
+    N_OF_SAMPLES = 10
+    N_OF_ATTRS = 4
+
+    def __init__(self, file_path, class_col, sample_frac=SAMPLE_FRAC,
+                 n_of_samples=N_OF_SAMPLES, n_of_attrs=N_OF_ATTRS):
         self.df = DataFrame.from_csv(file_path, header=0, index_col=None)
         self.class_col = class_col
         self.cols = list(self.df.columns.values)
@@ -16,6 +22,11 @@ class Data(object):
         except ValueError:
             print 'Class column {0} not present'.format(class_col)
             sys.exit(1)
+        self.sample_frac = sample_frac
+        self.n_of_samples = n_of_samples
+        self.n_of_attrs = n_of_attrs
+        self.samples = []
+        self.attr_sets = []
 
     def clean(self):
         self._check_for_missing()
@@ -53,3 +64,15 @@ class Data(object):
             sample = self.df.sample(sample_size)
             undersampled = undersampled.append(sample)
         self.df = undersampled
+
+    def get_samples(self):
+        for i in range(self.n_of_samples):
+            sample = self.df.sample(frac=self.sample_frac)
+            self.samples.append(sample)
+
+    def get_attr_sets(self):
+        if self.n_of_attrs > len(self.attr_cols):
+            n_of_attrs = len(self.attr_cols)
+        for i in range(self.n_of_samples):
+            attrs = random.sample(self.attr_cols, n_of_attrs)
+            self.attr_sets.append(attrs)
