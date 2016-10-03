@@ -26,7 +26,7 @@ class Data(object):
         self.n_of_samples = n_of_samples
         self.n_of_attrs = n_of_attrs
         self.samples = []
-        self.attr_sets = []
+        self.attr_samples = []
 
     def clean(self):
         self._check_for_missing()
@@ -71,9 +71,9 @@ class Data(object):
             sample = self.df.sample(frac=self.sample_frac)
             self.samples.append(sample)
 
-    def get_attr_sets(self):
-        if self.n_of_attrs > len(self.attr_cols):
-            n_of_attrs = len(self.attr_cols)
+    def get_attr_samples(self):
+        self.attr_samples = []
+        n_of_attrs = min(self.n_of_attrs, len(self.attr_cols))
         for i in range(self.n_of_samples):
             attrs = random.sample(self.attr_cols, n_of_attrs)
-            self.attr_sets.append(attrs)
+            self.attr_samples.append(attrs)

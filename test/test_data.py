@@ -86,4 +86,24 @@ class TestGetSamples:
 
 
 class TestGetAttrSets:
-    pass
+
+    def test_number_of_attributes(self, data):
+        data.n_of_samples = 1
+        max_attr_count = len(data.attr_cols)
+        for i in xrange(10):
+            data.n_of_attrs = i
+            data.get_attr_samples()
+            assert len(data.attr_samples[0]) <= max_attr_count
+
+    def test_attributes_in_sample_unique(self, data):
+        for i in xrange(10):
+            data.n_of_attrs = i
+            data.get_attr_samples()
+            assert len(data.attr_samples[0]) == len(set(data.attr_samples[0]))
+
+    def test_sample_attributes_in_data_attributes(self, data):
+        for i in xrange(10):
+            data.n_of_attrs = i
+            data.get_attr_samples()
+            for attr in data.attr_samples[0]:
+                assert attr in data.attr_cols
