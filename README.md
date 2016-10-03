@@ -1,3 +1,3 @@
-# RandomSpitter
-Own python implementation of random forest classification algorithm
+# RandomShrubs
+Own python implementation of Random Forest classification algorithm
 

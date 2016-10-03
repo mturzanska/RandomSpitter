@@ -66,6 +66,7 @@ class Data(object):
         self.df = undersampled
 
     def get_samples(self):
+        self.samples = []
         for i in range(self.n_of_samples):
             sample = self.df.sample(frac=self.sample_frac)
             self.samples.append(sample)

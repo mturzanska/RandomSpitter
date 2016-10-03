@@ -3,7 +3,7 @@ from __future__ import division
 from pandas import DataFrame
 import pytest
 
-from spitter.data import Data
+from random_shrubs.data import Data
 
 
 class TestDataInit:
@@ -60,3 +60,30 @@ class TestCheckForImbalance:
         data.df[class_col] = 1
         data._check_for_imbalance()
         assert data.df.empty
+
+
+class TestGetSamples:
+
+    def test_number_of_samples(self, data):
+        for i in xrange(3):
+            data.n_of_samples = i
+            data.get_samples()
+            assert len(data.samples) == i
+
+    def test_sample_fraction(self, data):
+        sample_fractions = [0., 0.67, 1.]
+        for f in sample_fractions:
+            data.sample_frac = f
+            data.get_samples()
+            sample_size = len(data.samples[0].index)
+            fraction_size = round(len(data.df.index) * f, 0)
+            assert sample_size == fraction_size
+
+    def test_sample_fraction_gt_1(self, data):
+        data.sample_frac = 1.5
+        with pytest.raises(ValueError):
+            data.get_samples()
+
+
+class TestGetAttrSets:
+    pass
