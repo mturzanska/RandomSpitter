@@ -5,12 +5,13 @@ from math import log
 class Node(object):
 
     def __init__(self, df=[], parent=None, kids=[],
-                 attr=None, attr_value=None):
+                 attr=None, attr_value=None, is_root=False):
         self.df = df
         self.parent = parent
         self.kids = kids
         self.attr = attr
         self.attr_value = attr_value
+        self.is_root = is_root
 
 
 class Shrub(object):
@@ -19,8 +20,9 @@ class Shrub(object):
         self.df = df
         self.attr_cols = attr_cols
         self.class_col = class_col
-        self.root = Node(df=self.df)
-        self.nodes = [self.root, ]
+        self.root = Node(df=self.df, is_root=True)
+        self.nodes = []
+        self.stubs = [self.root, ]
         self.leaves = []
         while self.stubs:
             self.grow()
@@ -75,7 +77,7 @@ class Shrub(object):
         attr = self.choose_attribute()
         branches = self.fork(stub.df, attr)
         if not branches:
-            self.shrub.leaves.append(stub)
+            self.leaves.append(stub)
             return
         for attr_value, df in branches.iteritems():
             child = Node(df=df, parent=stub, attr=attr, attr_value=attr_value)
