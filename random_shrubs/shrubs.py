@@ -24,8 +24,6 @@ class Shrub(object):
         self.nodes = []
         self.stubs = [self.root, ]
         self.leaves = []
-        while self.stubs:
-            self.grow()
 
     @staticmethod
     def compute_entropy(df, class_col):
@@ -52,35 +50,41 @@ class Shrub(object):
             branches[value] = branch
         return branches
 
-    def compute_info_gain(self, attr):
-        info_gain = self.compute_entropy(df=self.df, class_col=self.class_col)
-        data_size = len(self.df.index)
-        if attr in self.attr_cols:
-            attr_values = self.df[attr].unique()
+    def compute_info_gain(self, df, attr, attr_cols):
+        info_gain = self.compute_entropy(df=df, class_col=self.class_col)
+        data_size = len(df.index)
+        if attr in attr_cols:
+            attr_values = df[attr].unique()
             for value in attr_values:
-                subset = self.df.loc[self.df[attr] == value]
-                subset_size = len(self.df.index)
+                subset = df.loc[df[attr] == value]
+                subset_size = len(df.index)
                 share = subset_size/data_size
                 entropy = self.compute_entropy(subset, self.class_col)
                 info_gain -= share * entropy
             return info_gain
 
-    def choose_attribute(self):
+    def choose_attribute(self, df, attr_cols):
         info_gains = {}
-        for attr in self.attr_cols:
-            info_gain = self.compute_info_gain(attr=attr)
+        for attr in attr_cols:
+            info_gain = self.compute_info_gain(
+                df=df, attr=attr, attr_cols=attr_cols)
             info_gains[attr] = info_gain
         return max(info_gains, key=lambda x: info_gains[x])
 
     def grow(self):
-        stub = self.stubs.pop()
-        attr = self.choose_attribute()
-        branches = self.fork(stub.df, attr)
-        if not branches:
-            self.leaves.append(stub)
-            return
-        for attr_value, df in branches.iteritems():
-            child = Node(df=df, parent=stub, attr=attr, attr_value=attr_value)
-            stub.kids.append(child)
-            self.stubs.append(child)
-            self.nodes.append(stub)
+        while self.stubs:
+            stub = self.stubs.pop()
+            try:
+                attr_cols = [c for c in stub.df.columns.values
+                             if c != self.class_col]
+                attr = self.choose_attribute(df=stub.df, attr_cols=attr_cols)
+                branches = self.fork(stub.df, attr)
+                for attr_value, df in branches.iteritems():
+                    child = Node(df=df, parent=stub, attr=attr,
+                                 attr_value=attr_value)
+                    stub.kids.append(child)
+                    self.stubs.append(child)
+                    if stub not in self.nodes:
+                        self.nodes.append(stub)
+            except ValueError:
+                self.leaves.append(stub)

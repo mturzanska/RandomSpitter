@@ -1,11 +1,12 @@
 from random_shrubs.shrubs import Shrub
 
 
-class TestShrubInit:
+class TestShrub:
 
     def test_grow(self, data):
         shrub = Shrub(df=data.df, attr_cols=data.attr_cols,
                       class_col=data.class_col)
+        shrub.grow()
         assert shrub.nodes
         assert shrub.leaves
         assert not shrub.stubs
@@ -13,8 +14,9 @@ class TestShrubInit:
     def test_nodes(self, data):
         shrub = Shrub(df=data.df, attr_cols=data.attr_cols,
                       class_col=data.class_col)
-        non_root_nodes = [node for node in shrub.nodes if not node.is_root]
-        for node in non_root_nodes:
-            assert node.attr in data.attr_cols
-            assert node.parent in shrub.nodes
-            assert set(node.kids) < set(shrub.nodes)
+        shrub.grow()
+        depth = len(shrub.attr_cols)
+        nodes_vs_depth = {d: pow(2, d) for d in range(depth + 1)}
+        assert len(shrub.stubs) == 0
+        assert len(shrub.leaves) == nodes_vs_depth[depth]
+        assert len(shrub.nodes) == (pow(2, depth + 1) - 1) - len(shrub.leaves)
