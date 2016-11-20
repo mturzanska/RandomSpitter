@@ -4,15 +4,13 @@ import sys
 
 from pandas import DataFrame
 
+from random_shrubs.defaults import N_OF_ATTRS, N_OF_SAMPLES, SAMPLE_FRAC
+
 
 class Data(object):
 
-    SAMPLE_FRAC = 0.67
-    N_OF_SAMPLES = 10
-    N_OF_ATTRS = 4
-
-    def __init__(self, file_path, class_col, sample_frac=SAMPLE_FRAC,
-                 n_of_samples=N_OF_SAMPLES, n_of_attrs=N_OF_ATTRS):
+    def __init__(self, file_path, class_col, sample_frac,
+                 n_of_samples, n_of_attrs):
         self.df = DataFrame.from_csv(file_path, header=0, index_col=None)
         self.class_col = class_col
         self.cols = list(self.df.columns.values)
@@ -22,9 +20,9 @@ class Data(object):
         except ValueError:
             print 'Class column {0} not present'.format(class_col)
             sys.exit(1)
-        self.sample_frac = sample_frac
-        self.n_of_samples = n_of_samples
-        self.n_of_attrs = n_of_attrs
+        self.sample_frac = sample_frac if sample_frac else SAMPLE_FRAC
+        self.n_of_samples = n_of_samples if n_of_samples else N_OF_SAMPLES
+        self.n_of_attrs = n_of_attrs if n_of_attrs else N_OF_ATTRS
         self.samples = []
         self.attr_samples = []
 
