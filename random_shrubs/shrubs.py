@@ -4,26 +4,39 @@ from math import log
 
 class Node(object):
 
-    def __init__(self, df=[], parent=None, kids=[],
+    def __init__(self, df=None, parent=None, kids=None,
                  attr=None, attr_value=None, is_root=False):
         self.df = df
         self.parent = parent
-        self.kids = kids
+        self.kids = kids or []
         self.attr = attr
         self.attr_value = attr_value
         self.is_root = is_root
+        self.label = None
 
 
 class Shrub(object):
 
-    def __init__(self, df, attr_cols, class_col):
+    def __init__(self, df, attr_cols, class_col, root):
         self.df = df
         self.attr_cols = attr_cols
         self.class_col = class_col
-        self.root = Node(df=self.df, is_root=True)
+        self.root = root
         self.nodes = []
-        self.stubs = [self.root, ]
+        self.stubs = [root, ]
         self.leaves = []
+
+    @staticmethod
+    def classify(df_row, root):
+        label = None
+        node = root
+        while label is None:
+            for kid in node.kids:
+                attr_value = df_row[kid.attr]
+                if kid.attr_value == attr_value:
+                    node = kid
+                    label = kid.label
+        return label
 
     @staticmethod
     def compute_entropy(df, class_col):
@@ -88,3 +101,5 @@ class Shrub(object):
                         self.nodes.append(stub)
             except ValueError:
                 self.leaves.append(stub)
+        for leaf in self.leaves:
+            leaf.label = leaf.df[self.class_col].value_counts().idxmax()

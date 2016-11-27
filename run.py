@@ -2,6 +2,7 @@ import argparse
 import logging
 
 from random_shrubs.data import Data
+from random_shrubs.shrubs import Node
 from random_shrubs.shrubs import Shrub
 
 
@@ -28,10 +29,16 @@ def run(csv, class_col, sample_frac, n_of_samples, n_of_attrs):
             'Growing {nth} shrub. Attributes: {attrs}'
             .format(nth=counter, attrs=attrs)
         )
-        shrub = Shrub(df=sample, attr_cols=attrs, class_col=data.class_col)
+        root = Node(df=sample, is_root=True)
+        shrub = Shrub(
+            df=sample, attr_cols=attrs, class_col=data.class_col, root=root
+        )
         shrub.grow()
         shrubs.append(shrub)
-
+    labels = []
+    for index, row in data.df.iterrows():
+        labels.append(shrub.classify(row, shrub.root))
+    data.df['label'] = labels
 
 if __name__ == '__main__':
 
