@@ -1,12 +1,12 @@
 import argparse
-import logging
 
+from random_shrubs.core import logger
 from random_shrubs.data import Data
-from random_shrubs.shrubs import Node
-from random_shrubs.shrubs import Shrub
+from random_shrubs.shrubs import RandomShrubs
 
 
 def run(csv, class_col, sample_frac, n_of_samples, n_of_attrs):
+
     logger.info(
         'Reading data from {csv}. Class column: {class_col}'
         .format(csv=csv, class_col=class_col)
@@ -19,35 +19,13 @@ def run(csv, class_col, sample_frac, n_of_samples, n_of_attrs):
         'Splitting {csv} into {n} samples, each having {frac}% of instances'
         .format(csv=csv, n=data.n_of_samples, frac=data.sample_frac)
     )
-    data.get_samples()
-    data.get_attr_samples()
-    shrubs = []
-    counter = 0
-    for sample, attrs in zip(data.samples, data.attr_samples):
-        counter += 1
-        logger.info(
-            'Growing {nth} shrub. Attributes: {attrs}'
-            .format(nth=counter, attrs=attrs)
-        )
-        root = Node(df=sample, is_root=True)
-        shrub = Shrub(
-            df=sample, attr_cols=attrs, class_col=data.class_col, root=root
-        )
-        shrub.grow()
-        shrubs.append(shrub)
-    labels = []
-    for index, row in data.df.iterrows():
-        labels.append(shrub.classify(row, shrub.root))
-    data.df['label'] = labels
+
+    random_shrubs = RandomShrubs(data)
+    random_shrubs.grow()
+    random_shrubs.classify()
+
 
 if __name__ == '__main__':
-
-    logger = logging.getLogger('random_shrubs')
-    handler = logging.StreamHandler()
-    formatter = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
 
     parser = argparse.ArgumentParser()
     parser.add_argument('csv', help='path to csv file with headers')

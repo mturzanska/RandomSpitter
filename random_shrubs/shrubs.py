@@ -1,6 +1,10 @@
 from __future__ import division
 from math import log
 
+import numpy as np
+
+from random_shrubs.core import logger
+
 
 class Node(object):
 
@@ -17,10 +21,10 @@ class Node(object):
 
 class Shrub(object):
 
-    def __init__(self, df, attr_cols, class_col, root):
+    def __init__(self, df, attrs, label, root):
         self.df = df
-        self.attr_cols = attr_cols
-        self.class_col = class_col
+        self.attrs = attrs
+        self.label = label
         self.root = root
         self.nodes = []
         self.stubs = [root, ]
@@ -39,14 +43,13 @@ class Shrub(object):
         return label
 
     @staticmethod
-    def compute_entropy(df, class_col):
+    def compute_entropy(df, label):
         entropy = 0
         data_size = len(df.index)
-        classes = df[class_col].unique()
-        for cls in classes:
-            members = df.loc[df[class_col] == cls]
-            cls_size = len(members)
-            share = cls_size/data_size
+        label_values = df[label].unique()
+        for l in label_values:
+            instances = df.loc[df[label] == l]
+            share = len(instances)/data_size
             entropy -= share * log(share, 2)
         return entropy
 
@@ -63,24 +66,24 @@ class Shrub(object):
             branches[value] = branch
         return branches
 
-    def compute_info_gain(self, df, attr, attr_cols):
-        info_gain = self.compute_entropy(df=df, class_col=self.class_col)
+    def compute_info_gain(self, df, attr, attrs):
+        info_gain = self.compute_entropy(df=df, label=self.label)
         data_size = len(df.index)
-        if attr in attr_cols:
+        if attr in attrs:
             attr_values = df[attr].unique()
             for value in attr_values:
                 subset = df.loc[df[attr] == value]
                 subset_size = len(df.index)
                 share = subset_size/data_size
-                entropy = self.compute_entropy(subset, self.class_col)
+                entropy = self.compute_entropy(subset, self.label)
                 info_gain -= share * entropy
             return info_gain
 
-    def choose_attribute(self, df, attr_cols):
+    def choose_attribute(self, df, attrs):
         info_gains = {}
-        for attr in attr_cols:
+        for attr in attrs:
             info_gain = self.compute_info_gain(
-                df=df, attr=attr, attr_cols=attr_cols)
+                df=df, attr=attr, attrs=attrs)
             info_gains[attr] = info_gain
         return max(info_gains, key=lambda x: info_gains[x])
 
@@ -88,9 +91,8 @@ class Shrub(object):
         while self.stubs:
             stub = self.stubs.pop()
             try:
-                attr_cols = [c for c in stub.df.columns.values
-                             if c != self.class_col]
-                attr = self.choose_attribute(df=stub.df, attr_cols=attr_cols)
+                attrs = [c for c in stub.df.columns.values if c != self.label]
+                attr = self.choose_attribute(df=stub.df, attrs=attrs)
                 branches = self.fork(stub.df, attr)
                 for attr_value, df in branches.iteritems():
                     child = Node(df=df, parent=stub, attr=attr,
@@ -102,4 +104,38 @@ class Shrub(object):
             except ValueError:
                 self.leaves.append(stub)
         for leaf in self.leaves:
-            leaf.label = leaf.df[self.class_col].value_counts().idxmax()
+            leaf.label = leaf.df[self.label].value_counts().idxmax()
+
+
+class RandomShrubs(object):
+
+    def __init__(self, data):
+        self.df = data.df
+        data.get_samples()
+        self.samples = data.samples
+        data.get_attr_samples()
+        self.attr_samples = data.attr_samples
+        self.label = data.class_col
+        self.shrubs = None
+
+    def grow(self):
+        self.shrubs = []
+        for df, attrs in zip(self.samples, self.attr_samples):
+            shrub_id = len(self.shrubs) + 1 if self.shrubs else 1
+            logger.info(
+                'Growing {shrub_id} shrub.Attributes: {attrs}'
+                .format(shrub_id=shrub_id, attrs=attrs)
+            )
+            root = Node(df=df, is_root=True)
+            shrub = Shrub(df=df, attrs=attrs, label=self.label, root=root)
+            shrub.grow()
+            self.shrubs.append(shrub)
+
+    def classify(self):
+        self.df['labels'] = self.df.apply(lambda x: [], axis=1)
+        for shrub in self.shrubs:
+            for index, row in self.df.iterrows():
+                label = shrub.classify(row, shrub.root)
+                row['labels'] = row['labels'].append(label)
+        self.df['label'] = self.df['labels'].apply(lambda x: sum(x) / len(x))
+        self.df['label'] = np.where(self.df['label'] > 0.5, 1, 0)
