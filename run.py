@@ -2,7 +2,7 @@ import argparse
 
 from random_shrubs.core import logger
 from random_shrubs.data import Data
-from random_shrubs.shrubs import RandomShrubs
+from random_shrubs.algorithm import RandomShrubs
 
 
 def run(csv, class_col, sample_frac, n_of_samples, n_of_attrs):
@@ -23,6 +23,11 @@ def run(csv, class_col, sample_frac, n_of_samples, n_of_attrs):
     random_shrubs = RandomShrubs(data)
     random_shrubs.grow()
     random_shrubs.classify()
+    random_shrubs.set_error_rate()
+
+    logger.info(
+        'Average error rate {0}'.format(random_shrubs.error_rate)
+    )
 
 
 if __name__ == '__main__':

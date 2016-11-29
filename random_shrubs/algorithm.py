@@ -21,14 +21,24 @@ class Node(object):
 
 class Shrub(object):
 
-    def __init__(self, df, attrs, label, root):
+    def __init__(self, df, valid_set, attrs, label):
         self.df = df
+        self.valid_set = valid_set
         self.attrs = attrs
         self.label = label
-        self.root = root
+        self.root = Node(df=df, is_root=True)
         self.nodes = []
-        self.stubs = [root, ]
+        self.stubs = [self.root, ]
         self.leaves = []
+        self.error_rate = 0
+
+    def set_error_rate(self):
+        error_count = 0
+        for index, row in self.df.iterrows():
+            labeled_as = self.classify(row, self.root)
+            if labeled_as != row[self.label]:
+                error_count += 1
+        self.error_rate = error_count/len(self.valid_set)
 
     @staticmethod
     def classify(df_row, root):
@@ -113,21 +123,25 @@ class RandomShrubs(object):
         self.df = data.df
         data.get_samples()
         self.samples = data.samples
+        self.valid_sets = data.valid_sets
         data.get_attr_samples()
         self.attr_samples = data.attr_samples
         self.label = data.class_col
-        self.shrubs = None
+        self.shrubs = []
+        self.error_rate = 0
 
     def grow(self):
-        self.shrubs = []
-        for df, attrs in zip(self.samples, self.attr_samples):
+        for df, attrs, valid_set in zip(
+            self.samples, self.attr_samples, self.valid_sets
+        ):
             shrub_id = len(self.shrubs) + 1 if self.shrubs else 1
             logger.info(
                 'Growing {shrub_id} shrub.Attributes: {attrs}'
                 .format(shrub_id=shrub_id, attrs=attrs)
             )
-            root = Node(df=df, is_root=True)
-            shrub = Shrub(df=df, attrs=attrs, label=self.label, root=root)
+            shrub = Shrub(
+                df=df, valid_set=valid_set, attrs=attrs, label=self.label
+            )
             shrub.grow()
             self.shrubs.append(shrub)
 
@@ -139,3 +153,10 @@ class RandomShrubs(object):
                 row['labels'] = row['labels'].append(label)
         self.df['label'] = self.df['labels'].apply(lambda x: sum(x) / len(x))
         self.df['label'] = np.where(self.df['label'] > 0.5, 1, 0)
+
+    def set_error_rate(self):
+        error_rate_agg = 0
+        for shrub in self.shrubs:
+            shrub.set_error_rate()
+            error_rate_agg += shrub.error_rate
+        self.error_rate = error_rate_agg/len(self.samples)

@@ -24,6 +24,7 @@ class Data(object):
         self.n_of_samples = n_of_samples if n_of_samples else N_OF_SAMPLES
         self.n_of_attrs = n_of_attrs if n_of_attrs else N_OF_ATTRS
         self.samples = []
+        self.valid_sets = []
         self.attr_samples = []
 
     def clean(self):
@@ -67,7 +68,9 @@ class Data(object):
         self.samples = []
         for i in range(self.n_of_samples):
             sample = self.df.sample(frac=self.sample_frac)
+            valid_set = self.df[~self.df.isin(sample)].dropna()
             self.samples.append(sample)
+            self.valid_sets.append(valid_set)
 
     def get_attr_samples(self):
         self.attr_samples = []
