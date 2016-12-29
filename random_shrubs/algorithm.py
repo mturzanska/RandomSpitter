@@ -32,14 +32,6 @@ class Shrub(object):
         self.leaves = []
         self.error_rate = 0
 
-    def set_error_rate(self):
-        error_count = 0
-        for index, row in self.df.iterrows():
-            labeled_as = self.classify(row, self.root)
-            if labeled_as != row[self.label]:
-                error_count += 1
-        self.error_rate = error_count/len(self.valid_set)
-
     @staticmethod
     def classify(df_row, root):
         label = None
@@ -119,16 +111,18 @@ class Shrub(object):
 
 class RandomShrubs(object):
 
-    def __init__(self, data):
-        self.df = data.df
-        data.get_samples()
-        self.samples = data.samples
-        self.valid_sets = data.valid_sets
-        data.get_attr_samples()
-        self.attr_samples = data.attr_samples
-        self.label = data.class_col
+    def __init__(self, train_data, classify_data):
+        self.df = train_data.df
+        train_data.get_samples()
+        self.samples = train_data.samples
+        self.valid_sets = train_data.valid_sets
+        train_data.get_attr_samples()
+        self.attr_samples = train_data.attr_samples
+        self.label = train_data.class_col
         self.shrubs = []
         self.error_rate = 0
+        self.classify_data = classify_data
+        self.classify_df = classify_data.df
 
     def grow(self):
         for df, attrs, valid_set in zip(
@@ -146,17 +140,18 @@ class RandomShrubs(object):
             self.shrubs.append(shrub)
 
     def classify(self):
-        self.df['labels'] = self.df.apply(lambda x: [], axis=1)
+        self.classify_df['labels'] = self.classify_df.apply(
+            lambda x: [], axis=1
+        )
         for shrub in self.shrubs:
-            for index, row in self.df.iterrows():
+            for index, row in self.classify_df.iterrows():
                 label = shrub.classify(row, shrub.root)
                 row['labels'] = row['labels'].append(label)
-        self.df['label'] = self.df['labels'].apply(lambda x: sum(x) / len(x))
-        self.df['label'] = np.where(self.df['label'] > 0.5, 1, 0)
-
-    def set_error_rate(self):
-        error_rate_agg = 0
-        for shrub in self.shrubs:
-            shrub.set_error_rate()
-            error_rate_agg += shrub.error_rate
-        self.error_rate = error_rate_agg/len(self.samples)
+        self.classify_df['label'] = self.classify_df['labels'].apply(
+            lambda x: sum(x) / len(x)
+        )
+        self.classify_df['label'] = np.where(
+            self.classify_df['label'] > 0.5, 1, 0
+        )
+        del self.classify_df['labels']
+        self.classify_df.to_csv(self.classify_data.data_set)

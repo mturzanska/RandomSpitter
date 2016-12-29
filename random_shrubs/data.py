@@ -9,9 +9,17 @@ from random_shrubs.defaults import N_OF_ATTRS, N_OF_SAMPLES, SAMPLE_FRAC
 
 class Data(object):
 
-    def __init__(self, file_path, class_col, sample_frac,
-                 n_of_samples, n_of_attrs):
-        self.df = DataFrame.from_csv(file_path, header=0, index_col=None)
+    def __init__(self, data_set):
+        self.data_set = data_set
+        self.df = DataFrame.from_csv(data_set, header=0, index_col=None)
+        self.cols = list(self.df.columns.values)
+
+
+class TrainData(Data):
+
+    def __init__(self, class_col, sample_frac, n_of_samples, n_of_attrs,
+                 **kwargs):
+        super(TrainData, self).__init__(**kwargs)
         self.class_col = class_col
         self.cols = list(self.df.columns.values)
         try:
